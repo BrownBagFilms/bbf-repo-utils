@@ -1,0 +1,11 @@
+configuration:
+
+requires_shotgun_fields:
+
+display_name: "Repository Utilities Framework"
+description: "Utilities to access, clone, update, etc... vcs repositories (git, svn, etc...)"
+
+require_shotgun_version:
+requires_core_version:
+
+frameworks:
