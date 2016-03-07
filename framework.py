@@ -1,10 +1,6 @@
 import sgtk
 
 class RepoUtilsFramework(sgtk.platform.Framework):
-
-    ##########################################################################################
-    # init and destroy
-
     def init_framework(self):
         self.log_debug("%s: Initializing..." % self)
 
