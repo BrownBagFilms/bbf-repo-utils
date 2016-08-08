@@ -27,11 +27,20 @@ def clone_subprocess(remote_url, local_url, branch):
                             universal_newlines=True, bufsize=0, shell=True)
 
 def update_subprocess(local_url, remote='origin', branch=None):
+    def call_git(process_args):
+        return subprocess.Popen(process_args,
+                                stdin=subprocess.PIPE, 
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                cwd=local_url,
+                                universal_newlines=True, bufsize=0, shell=True)
+
     process_args = [git_cmds.git, 'pull', remote]
+
     if branch is not None:
+        call_git([git_cmds.git, 'checkout', branch])
         process_args.append(branch)
-    return subprocess.Popen(process_args,
-                            stdin=subprocess.PIPE, 
-                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                            cwd=local_url,
-                            universal_newlines=True, bufsize=0, shell=True)
+
+    return call_git(process_args)
+
+
+
