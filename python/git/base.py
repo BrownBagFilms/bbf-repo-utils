@@ -7,7 +7,7 @@ def init(fw_root):
     global git_cmds
     if sys.platform == 'win32':
         from .git_win32 import GitCmds
-    elif sys.platofrm == 'linux2':
+    elif sys.platform == 'linux2':
         raise ImportError("Unsupported platform")
     elif sys.platform == 'darwin':
         raise ImportError("Unsupported platform")
@@ -26,21 +26,23 @@ def clone_subprocess(remote_url, local_url, branch):
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                             universal_newlines=True, bufsize=0, shell=True)
 
+
 def update_subprocess(local_url, remote='origin', branch=None):
     def call_git(process_args):
-        return subprocess.Popen(process_args,
-                                stdin=subprocess.PIPE, 
-                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                cwd=local_url,
-                                universal_newlines=True, bufsize=0, shell=True)
+        p = subprocess.Popen(process_args,
+                             stdin=subprocess.PIPE,
+                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                             cwd=local_url,
+                             universal_newlines=True, bufsize=0, shell=False)
+        return p
 
     process_args = [git_cmds.git, 'pull', remote]
 
     if branch is not None:
-        call_git([git_cmds.git, 'checkout', branch])
+        p = call_git([git_cmds.git, 'checkout', branch])  # Checkout [branch]
+        p.communicate()  # Need to wait for process to finish to prevent race condition
+        p = call_git([git_cmds.git, 'reset', "--hard", "origin/%s" % branch])  # Hard reset to origin/[branch]
+        p.communicate()  # Ensure process is finished
         process_args.append(branch)
 
     return call_git(process_args)
-
-
-
