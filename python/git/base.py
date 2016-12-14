@@ -1,7 +1,8 @@
 import sys
-import subprocess
+from PySide import QtCore
 
 git_cmds = None
+
 
 def init(fw_root):
     global git_cmds
@@ -16,33 +17,34 @@ def init(fw_root):
 
     git_cmds = GitCmds(fw_root)
 
-def clone_subprocess(remote_url, local_url, branch):
-    process_args = [git_cmds.git, 'clone',
-                    '-b', branch,
-                    remote_url, local_url]
 
-    return subprocess.Popen(process_args, 
-                            stdin=subprocess.PIPE,
-                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                            universal_newlines=True, bufsize=0, shell=True)
+def clone_subprocess(remote_url, local_url, branch):
+    args = ["clone", "-b", branch, remote_url, local_url]
+    process = QtCore.QProcess()
+    process.setProcessChannelMode(process.MergedChannels)
+    process.start(git_cmds.git, args)
+    return process
 
 
 def update_subprocess(local_url, remote='origin', branch=None):
-    def call_git(process_args):
-        p = subprocess.Popen(process_args,
-                             stdin=subprocess.PIPE,
-                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                             cwd=local_url,
-                             universal_newlines=True, bufsize=0, shell=False)
-        return p
+    def call_git(args):
+        process = QtCore.QProcess()
+        process.setProcessChannelMode(process.MergedChannels)
+        process.setWorkingDirectory(local_url)
+        process.start(git_cmds.git, args)
+        return process
 
-    process_args = [git_cmds.git, 'pull', remote]
+    process_args = ['pull', remote]
 
     if branch is not None:
-        p = call_git([git_cmds.git, 'checkout', branch])  # Checkout [branch]
-        p.communicate()  # Need to wait for process to finish to prevent race condition
-        p = call_git([git_cmds.git, 'reset', "--hard", "origin/%s" % branch])  # Hard reset to origin/[branch]
-        p.communicate()  # Ensure process is finished
+        p = call_git(['checkout', branch])  # Checkout [branch]
+        if not p.waitForFinished(60000):  # Need to wait for process to finish
+            return None
+
+        p = call_git(['reset', "--hard", "origin/%s" % branch])  # Hard reset to origin/[branch]
+        if not p.waitForFinished(60000):  # Ensure process is finished
+            return None
+
         process_args.append(branch)
 
     return call_git(process_args)
